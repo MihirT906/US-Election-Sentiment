@@ -10,6 +10,13 @@ consumer = KafkaConsumer(
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
+def process_data(message):
+    # Process the incoming data
+    message['text'] = message['text'].replace('\n', ' ').strip()
+    
+    # Print or process message further
+    print(f"Processed Message: {message['title']}")
+    
 print("Listening for messages in 'redditcomments'...")
 
 # Process incoming messages

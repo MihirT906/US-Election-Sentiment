@@ -30,20 +30,26 @@ producer = KafkaProducer(
 )
 
 # Function to stream Reddit comments to Kafka
-def stream_reddit_comments(subreddit_name):
+def stream_reddit_comments(subreddit_name, keywords):
     subreddit = reddit.subreddit(subreddit_name)
 
-    for comment in subreddit.stream.comments(skip_existing=True):
-        comment_data = {
-            'id': comment.id,
-            'body': comment.body,
-            'created_utc': comment.created_utc,
-            'author': str(comment.author),
-            'score': comment.score,
-        }
-        print(f'Sending comment to Kafka: {comment.body[:30]}...')
-        producer.send('redditcomments', value=comment_data)
-        time.sleep(1)  # Adjust the rate as needed
+    for submission in subreddit.stream.submissions(skip_existing=False):
+        #check if keyword in submission title
+        if any(keyword in submission.title for keyword in keywords):
+            post_data = {
+                'id': submission.id,
+                'title': submission.title,
+                'created_utc': submission.created_utc,
+                'author': str(submission.author),
+                'score': submission.score,
+                'num_comments': submission.num_comments,
+                'selftext': submission.selftext
+            }
+            print(f'Sending comment to Kafka: {submission.title[:30]}...')
+            producer.send('redditcomments', value=post_data)
+            time.sleep(4)
+
 
 if __name__ == "__main__":
-    stream_reddit_comments('politics') 
+    keywords = ["Harris", "Trump"]
+    stream_reddit_comments('USpolitics', keywords) 
