@@ -3,6 +3,7 @@ import json
 from kafka import KafkaProducer
 import configparser
 import time
+from datetime import datetime
 
 # Load Reddit API credentials from config file
 config = configparser.ConfigParser()
@@ -30,26 +31,64 @@ producer = KafkaProducer(
 )
 
 # Function to stream Reddit comments to Kafka
-def stream_reddit_comments(subreddit_name, keywords):
+def stream_reddit_comments(subreddit_name, candidates, policy_keywords):
     subreddit = reddit.subreddit(subreddit_name)
 
     for submission in subreddit.stream.submissions(skip_existing=False):
         #check if keyword in submission title
-        if any(keyword in submission.title for keyword in keywords):
+        if any(candidate in submission.title.lower() for candidate in candidates):
+            month_key = None
+            candidate_key = None
+            policy_key = None
+            
+            post_time = datetime.fromtimestamp(submission.created_utc)
+            month_key = post_time.strftime('%Y-%m')
+            
+            for candidate in candidates:
+                if candidate in submission.title.lower():
+                    candidate_key = candidate.lower()
+                    break
+                
+            for keyword in policy_keywords:
+                if keyword in submission.title.lower():
+                    policy_key = keyword.lower()
+                    break
+                
             post_data = {
                 'id': submission.id,
                 'title': submission.title,
+                'timestamp': post_time.strftime('%Y-%m-%d %H:%M:%S'),
                 'created_utc': submission.created_utc,
                 'author': str(submission.author),
                 'score': submission.score,
                 'num_comments': submission.num_comments,
-                'selftext': submission.selftext
+                'selftext': submission.selftext,
+                'month_key': month_key,
+                'candidate_key': candidate_key,
+                'policy_key': policy_key
             }
-            print(f'Sending comment to Kafka: {submission.title[:30]}...')
-            producer.send('redditcomments', value=post_data)
+            
+            producer.send(
+                'reddit_posts_raw', key=bytes(month_key, encoding='utf-8'), value=post_data
+            )
+            print(f'Sending comment to raw: {submission.title[:30]}...')
+            
+            if candidate_key:
+                producer.send(
+                    'reddit_candidate', key=bytes(candidate_key, encoding='utf-8'), value=post_data
+                )
+                print(f'Sending comment to candidate: {submission.title[:30]}...')
+            
+            if policy_key:
+                producer.send(
+                    'reddit_policy', key=bytes(policy_key, encoding='utf-8'), value=post_data
+                )
+                print(f'Sending comment to policy: {submission.title[:30]}...')
+            
             time.sleep(4)
 
-
 if __name__ == "__main__":
-    keywords = ["Harris", "Trump"]
-    stream_reddit_comments('USpolitics', keywords) 
+    candidates = ["harris", "trump"]
+    policy_keywords = ["economy", "healthcare", "education", "tax"]
+    #policy_keywords = ["economy"]
+    stream_reddit_comments('USpolitics', candidates, policy_keywords) 
