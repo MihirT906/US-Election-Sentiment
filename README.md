@@ -23,7 +23,11 @@ bin/kafka-topics.sh --list --bootstrap-server localhost:9092
 If Kafka is running, this command will either display a list of existing topics (or nothing if you haven’t created any topics yet) \n
 5. Create topic:
 ```
-bin/kafka-topics.sh --create --topic redditcomments --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 12 --topic reddit_comments
+```
+Find your topic using:
+```
+bin/kafka-topics.sh --list --bootstrap-server localhost:9092
 ```
 6. Run Producer: \n
 Add credentials to a file credentials.cfg of the format:
