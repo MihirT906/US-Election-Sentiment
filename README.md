@@ -47,3 +47,7 @@ python reddit_producer.py
 ```
 python reddit_consumer.py
 ```
+8. View it on Spark
+```
+spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3 stream_processor.py
+```

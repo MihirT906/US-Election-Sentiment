@@ -47,46 +47,40 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords):
             for candidate in candidates:
                 if candidate in submission.title.lower():
                     candidate_key = candidate.lower()
-                    break
+                    post_data = {
+                        'id': submission.id,
+                        'title': submission.title,
+                        'timestamp': post_time.strftime('%Y-%m-%d %H:%M:%S'),
+                        'created_utc': submission.created_utc,
+                        'author': str(submission.author),
+                        'score': submission.score,
+                        'num_comments': submission.num_comments,
+                        'selftext': submission.selftext,
+                        'month_key': month_key,
+                        'candidate_key': candidate_key
+                    }
+                    print(f'{candidate_key}: {submission.title[:30]}...')
+                    producer.send(
+                        f'reddit_posts_{candidate_key}', key=bytes(candidate_key, encoding='utf-8'), value=post_data
+                    )
+            time.sleep(1)
+            # for keyword in policy_keywords:
+            #     if keyword in submission.title.lower():
+            #         policy_key = keyword.lower()
+            #         break
                 
-            for keyword in policy_keywords:
-                if keyword in submission.title.lower():
-                    policy_key = keyword.lower()
-                    break
-                
-            post_data = {
-                'id': submission.id,
-                'title': submission.title,
-                'timestamp': post_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'created_utc': submission.created_utc,
-                'author': str(submission.author),
-                'score': submission.score,
-                'num_comments': submission.num_comments,
-                'selftext': submission.selftext,
-                'month_key': month_key,
-                'candidate_key': candidate_key,
-                'policy_key': policy_key
-            }
             
-            producer.send(
-                'reddit_posts_raw', key=bytes(month_key, encoding='utf-8'), value=post_data
-            )
-            print(f'Sending comment to raw: {submission.title[:30]}...')
+            # producer.send(
+            #     'reddit_posts_raw', key=bytes(month_key, encoding='utf-8'), value=post_data
+            # )
+            # print(f'Sending comment to raw: {submission.title[:30]}...')
             
-            if candidate_key:
-                producer.send(
-                    'reddit_candidate', key=bytes(candidate_key, encoding='utf-8'), value=post_data
-                )
-                print(f'Sending comment to candidate: {submission.title[:30]}...')
+            # if policy_key:
+            #     producer.send(
+            #         'reddit_policy', key=bytes(policy_key, encoding='utf-8'), value=post_data
+            #     )
+            #     #print(f'Sending comment to policy: {submission.title[:30]}...')
             
-            if policy_key:
-                producer.send(
-                    'reddit_policy', key=bytes(policy_key, encoding='utf-8'), value=post_data
-                )
-                print(f'Sending comment to policy: {submission.title[:30]}...')
-            
-            time.sleep(4)
-
 if __name__ == "__main__":
     candidates = ["harris", "trump"]
     policy_keywords = ["economy", "healthcare", "education", "tax"]
