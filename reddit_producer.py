@@ -36,9 +36,10 @@ def is_within_date_range(post_time, start_date, end_date):
 # Function to stream Reddit comments to Kafka
 def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_date, end_date):
     subreddit = reddit.subreddit(subreddit_name)
-
+    posts_fetched = 0
     # for submission in subreddit.stream.submissions(skip_existing=False):
     for submission in subreddit.new(limit=None):
+        posts_fetched += 1
         post_time = datetime.fromtimestamp(submission.created_utc)
         # Check if the post falls within the date range
         if not is_within_date_range(post_time, start_date, end_date):
@@ -72,28 +73,19 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_da
                     producer.send(
                         f'reddit_posts_{candidate_key}', key=bytes(candidate_key, encoding='utf-8'), value=post_data
                     )
-            # time.sleep(1)
-            # for keyword in policy_keywords:
-            #     if keyword in submission.title.lower():
-            #         policy_key = keyword.lower()
-            #         break
-                
-            
-            # producer.send(
-            #     'reddit_posts_raw', key=bytes(month_key, encoding='utf-8'), value=post_data
-            # )
-            # print(f'Sending comment to raw: {submission.title[:30]}...')
-            
-            # if policy_key:
-            #     producer.send(
-            #         'reddit_policy', key=bytes(policy_key, encoding='utf-8'), value=post_data
-            #     )
-            #     #print(f'Sending comment to policy: {submission.title[:30]}...')
-            
+                    #producer.flush()
+    
+    return posts_fetched
+
 if __name__ == "__main__":
     candidates = ["harris", "trump"]
     policy_keywords = ["economy", "healthcare", "education", "tax"]
     #policy_keywords = ["economy"]
     start_date = datetime(2024, 8, 1)  # Start date in the format (year, month, day)
     end_date = datetime(2024, 11, 5)  # End date in the format (year, month, day)
-    stream_reddit_comments('USpolitics', candidates, policy_keywords, start_date, end_date) 
+    start_time = time.time()
+    posts_fetched = stream_reddit_comments('USpolitics', candidates, policy_keywords, start_date, end_date) 
+    end_time = time.time()
+    latency = (end_time - start_time) * 1000  # convert to milliseconds
+    print(f"API Request Latency: {latency:.2f} ms")
+    print(f"Throughput: {posts_fetched / latency:.2f} posts/ms")
