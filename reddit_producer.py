@@ -30,11 +30,20 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
+def is_within_date_range(post_time, start_date, end_date):
+    return start_date <= post_time <= end_date
+
 # Function to stream Reddit comments to Kafka
-def stream_reddit_comments(subreddit_name, candidates, policy_keywords):
+def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_date, end_date):
     subreddit = reddit.subreddit(subreddit_name)
 
-    for submission in subreddit.stream.submissions(skip_existing=False):
+    # for submission in subreddit.stream.submissions(skip_existing=False):
+    for submission in subreddit.new(limit=None):
+        post_time = datetime.fromtimestamp(submission.created_utc)
+        # Check if the post falls within the date range
+        if not is_within_date_range(post_time, start_date, end_date):
+            continue
+        
         #check if keyword in submission title
         if any(candidate in submission.title.lower() for candidate in candidates):
             month_key = None
@@ -59,11 +68,11 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords):
                         'month_key': month_key,
                         'candidate_key': candidate_key
                     }
-                    print(f'{candidate_key}: {submission.title[:30]}...')
+                    print(f'{candidate_key}: {post_time}')
                     producer.send(
                         f'reddit_posts_{candidate_key}', key=bytes(candidate_key, encoding='utf-8'), value=post_data
                     )
-            time.sleep(1)
+            # time.sleep(1)
             # for keyword in policy_keywords:
             #     if keyword in submission.title.lower():
             #         policy_key = keyword.lower()
@@ -85,4 +94,6 @@ if __name__ == "__main__":
     candidates = ["harris", "trump"]
     policy_keywords = ["economy", "healthcare", "education", "tax"]
     #policy_keywords = ["economy"]
-    stream_reddit_comments('USpolitics', candidates, policy_keywords) 
+    start_date = datetime(2024, 8, 1)  # Start date in the format (year, month, day)
+    end_date = datetime(2024, 11, 5)  # End date in the format (year, month, day)
+    stream_reddit_comments('USpolitics', candidates, policy_keywords, start_date, end_date) 
