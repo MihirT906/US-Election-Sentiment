@@ -22,11 +22,12 @@ reddit = praw.Reddit(
 
 # Define subreddit and time range
 subreddit = reddit.subreddit('USpolitics')
-start_date = datetime(2024, 10, 1).timestamp()  # Start of the range (01-10-2024)
-end_date = datetime(2024, 11, 15).timestamp()  # End of the range (15-11-2024)
+start_date = datetime(2024, 10, 25).timestamp()  # Start of the range
+end_date = datetime(2024, 11, 15).timestamp()  # End of the range
 
 # Fetch posts
 posts = []
+total_posts = 0  # Counter for total posts processed
 last_post_time = None  # To track the timestamp of the last fetched post
 
 # Loop until all relevant posts are fetched
@@ -41,19 +42,26 @@ while True:
 
     # Loop through the posts and filter by date range
     for submission in submission_generator:
+        total_posts += 1  # Increment total posts counter
         if submission.created_utc < start_date:
             # Stop if the posts are outside the desired date range
             break
         if start_date <= submission.created_utc <= end_date:
-            posts.append(submission)
+            # Check if the title contains "harris" or "trump" in any case
+            title_lower = submission.title.lower()
+            if "harris" in title_lower or "trump" in title_lower:
+                posts.append(submission)
         
         # Update the 'before' timestamp
         last_post_time = submission.created_utc
 
-    # Break the loop if no posts are found or the start date is reached
+    # Break the loop if no more posts or the start date is reached
     if not posts or submission.created_utc < start_date:
         break
 
-# Print out the extracted posts (or save to a file)
+# Print out the extracted posts
 for post in posts:
     print(f"Title: {post.title}, Date: {datetime.utcfromtimestamp(post.created_utc)}")
+
+# Print total number of posts processed
+print(f"\nTotal posts processed: {total_posts}")
