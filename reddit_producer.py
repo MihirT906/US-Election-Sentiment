@@ -4,13 +4,15 @@ from kafka import KafkaProducer
 import configparser
 import time
 from datetime import datetime
+#Mansi
+from textblob import TextBlob  # Install: pip install textblob
 
 # Load Reddit API credentials from config file
 config = configparser.ConfigParser()
 config.read('credentials.cfg')
 
 
-client_id = config['DEFAULT']['client_id']
+client_id = config['DEFAULT']['CLIENT_ID']
 client_secret = config['DEFAULT']['SECRET_KEY']
 username = config['DEFAULT']['USERNAME']
 password = config['DEFAULT']['PASSWORD']
@@ -29,6 +31,11 @@ producer = KafkaProducer(
     bootstrap_servers='localhost:9092',  # Update with your Kafka broker address
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
+
+#Mansi
+def get_sentiment(text):
+    analysis = TextBlob(text)
+    return analysis.sentiment.polarity  # Returns a score between -1 and 1
 
 def is_within_date_range(post_time, start_date, end_date):
     return start_date <= post_time <= end_date
@@ -60,6 +67,7 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_da
                     post_data = {
                         'id': submission.id,
                         'title': submission.title,
+                        'selftext': submission.selftext, #M
                         'timestamp': post_time.strftime('%Y-%m-%d %H:%M:%S'),
                         'created_utc': submission.created_utc,
                         'author': str(submission.author),
@@ -67,7 +75,8 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_da
                         'num_comments': submission.num_comments,
                         'selftext': submission.selftext,
                         'month_key': month_key,
-                        'candidate_key': candidate_key
+                        'candidate_key': candidate_key,
+                        'sentiment': get_sentiment(submission.title + " " + submission.selftext) #M
                     }
                     print(f'{candidate_key}: {post_time}')
                     producer.send(
