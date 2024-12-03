@@ -4,7 +4,6 @@ from kafka import KafkaProducer
 import configparser
 import time
 from datetime import datetime
-#Mansi
 from textblob import TextBlob  # Install: pip install textblob
 
 # Load Reddit API credentials from config file
@@ -32,10 +31,6 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-#Mansi
-def get_sentiment(text):
-    analysis = TextBlob(text)
-    return analysis.sentiment.polarity  # Returns a score between -1 and 1
 
 def is_within_date_range(post_time, start_date, end_date):
     return start_date <= post_time <= end_date
@@ -76,7 +71,6 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_da
                         'selftext': submission.selftext,
                         'month_key': month_key,
                         'candidate_key': candidate_key,
-                        'sentiment': get_sentiment(submission.title + " " + submission.selftext) #M
                     }
                     print(f'{candidate_key}: {post_time}')
                     producer.send(
