@@ -73,24 +73,24 @@ df_aggregated = df_with_watermark.groupBy("month_key") \
     )
 
 # Output the aggregated data to console
-query = df_aggregated \
-    .writeStream \
-    .outputMode("update") \
-    .format("console") \
-    .start()
-# query = df_with_sentiment \
+# query = df_aggregated \
+#     .writeStream \
+#     .outputMode("update") \
+#     .format("console") \
+#     .start()
+# query = df_with_watermark \
 #     .writeStream \
 #     .outputMode("update") \
 #     .format("console") \
 #     .start()
 # Write aggregated data to a Parquet sink
-# query = df_with_sentiment \
-#     .writeStream \
-#     .outputMode("append") \
-#     .format("parquet") \
-#     .option("path", "output/sentiment_data") \
-#     .option("checkpointLocation", "checkpoint/sentiment_data") \
-#     .start()
+query = df_with_watermark \
+    .writeStream \
+    .outputMode("append") \
+    .format("parquet") \
+    .option("path", "output/sentiment_data") \
+    .option("checkpointLocation", "checkpoint/sentiment_data") \
+    .start()
 
 # Wait for the streaming query to terminate
 query.awaitTermination()

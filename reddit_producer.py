@@ -91,10 +91,11 @@ if __name__ == "__main__":
     policy_keywords = ["economy", "healthcare", "education", "tax"]
     #policy_keywords = ["economy"]
     start_date = datetime(2024, 8, 1)  # Start date in the format (year, month, day)
-    end_date = datetime(2024, 11, 5)  # End date in the format (year, month, day)
+    end_date = datetime(2024, 12, 2)  # End date in the format (year, month, day)
     start_time = time.time()
     posts_fetched = stream_reddit_comments('USpolitics', candidates, policy_keywords, start_date, end_date) 
     end_time = time.time()
     latency = (end_time - start_time) * 1000  # convert to milliseconds
+    print("Posts fetched: ", posts_fetched)
     print(f"API Request Latency: {latency:.2f} ms")
     print(f"Throughput: {posts_fetched / latency:.2f} posts/ms")
