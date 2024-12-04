@@ -5,6 +5,7 @@ import configparser
 import time
 from datetime import datetime
 from textblob import TextBlob  # Install: pip install textblob
+from config import SUBREDDIT_NAME
 
 # Load Reddit API credentials from config file
 config = configparser.ConfigParser()
@@ -36,7 +37,7 @@ def is_within_date_range(post_time, start_date, end_date):
     return start_date <= post_time <= end_date
 
 # Function to stream Reddit comments to Kafka
-def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_date, end_date):
+def stream_reddit_comments(subreddit_name, candidates, policy_keywords):
     subreddit = reddit.subreddit(subreddit_name)
     posts_fetched = 0
     # for submission in subreddit.stream.submissions(skip_existing=False):
@@ -44,8 +45,8 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_da
         posts_fetched += 1
         post_time = datetime.fromtimestamp(submission.created_utc)
         # Check if the post falls within the date range
-        if not is_within_date_range(post_time, start_date, end_date):
-            continue
+        # if not is_within_date_range(post_time, start_date, end_date):
+        #     continue
         
         #check if keyword in submission title
         if any(candidate in submission.title.lower() for candidate in candidates):
@@ -74,7 +75,7 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords, start_da
                     }
                     print(f'{candidate_key}: {post_time}')
                     producer.send(
-                        f'reddit_posts_{candidate_key}', key=bytes(candidate_key, encoding='utf-8'), value=post_data
+                        f'reddit_posts_{candidate_key}_{SUBREDDIT_NAME}', key=bytes(candidate_key, encoding='utf-8'), value=post_data
                     )
                     #producer.flush()
     
@@ -84,10 +85,10 @@ if __name__ == "__main__":
     candidates = ["harris", "trump"]
     policy_keywords = ["economy", "healthcare", "education", "tax"]
     #policy_keywords = ["economy"]
-    start_date = datetime(2024, 8, 1)  # Start date in the format (year, month, day)
-    end_date = datetime(2024, 12, 2)  # End date in the format (year, month, day)
+    # start_date = datetime(2024, 8, 1)  # Start date in the format (year, month, day)
+    # end_date = datetime(2024, 12, 2)  # End date in the format (year, month, day)
     start_time = time.time()
-    posts_fetched = stream_reddit_comments('USpolitics', candidates, policy_keywords, start_date, end_date) 
+    posts_fetched = stream_reddit_comments(SUBREDDIT_NAME, candidates, policy_keywords) 
     end_time = time.time()
     latency = (end_time - start_time) * 1000  # convert to milliseconds
     print("Posts fetched: ", posts_fetched)
