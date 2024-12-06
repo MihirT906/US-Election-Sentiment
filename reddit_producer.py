@@ -73,7 +73,8 @@ def stream_reddit_comments(subreddit_name, candidates, policy_keywords):
                         'month_key': month_key,
                         'candidate_key': candidate_key,
                     }
-                    print(f'{candidate_key}: {post_time}')
+                    print(f'post on {post_time} by {submission.author} mentions {candidate_key}')
+                    # print(f'{candidate_key}: {post_time}')
                     producer.send(
                         f'reddit_posts_{candidate_key}_{SUBREDDIT_NAME}', key=bytes(candidate_key, encoding='utf-8'), value=post_data
                     )
